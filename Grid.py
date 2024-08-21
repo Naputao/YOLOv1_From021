@@ -1,5 +1,5 @@
 import torch
-import Detection
+import Box
 class Grid:
     def __init__(self, tensor,grid_x,grid_y, bounding_boxes=2, clazz=20):
         assert isinstance(tensor, torch.Tensor), f"Not a Tensor: {type(tensor)}"
@@ -12,7 +12,7 @@ class Grid:
 
     @property
     def detections(self):
-        return [Detection.Detection(self.tensor[i:i+5],grid_x=self.grid_x,grid_y=self.grid_y) for i in range(self.bounding_boxes)]
+        return [Box.Box(self.tensor[i:i + 5], grid_x=self.grid_x, grid_y=self.grid_y) for i in range(self.bounding_boxes)]
 
     @property
     def class_probabilities(self):

@@ -2,24 +2,16 @@ import math
 import IOU
 import torch.nn as nn
 from Grid import Grid
-from Image import Image
-
+from Image import Image, config
+import Annotation
 
 class Loss(nn.Module):
-    def __init__(self, predict, target, grid=7, bounding_boxes=2, clazz=20, lamda_coord=5, lamda_noobj=0.5):
+    def __init__(self,config):
         super(Loss, self).__init__()
-        assert predict.shape[1] % (
-                grid * grid * (5 * bounding_boxes + clazz)) == 0, f"Tensor shape is incorrect: {predict.shape}"
-        self.target = target.view(-1, 5 * bounding_boxes + clazz)
-        self.predict = predict.view(-1, grid, grid, (5 * bounding_boxes + clazz))
-        self.grid = grid
-        self.bounding_boxes = bounding_boxes
-        self.clazz = clazz
-        self.lamda_coord = lamda_coord
-        self.lamda_noobj = lamda_noobj
+        self.config = config
         self.batch_size = self.predict.shape[0]
-        self.image = Image(448, 448,7)
-    def forward(self):
+        self.image = Image(self.config)
+    def forward(self,predict, annotation):
         #equal to localization_loss()+confidence_loss()+classification_loss()
         loss = 0.0
         for i in range(self.batch_size):
@@ -43,7 +35,7 @@ class Loss(nn.Module):
                         loss += (target.class_probabilities[j] - predict.class_probabilities[j]) ** 2
         return loss
 
-    def localization_loss(self):
+    def localization_loss(self,predict, annotation):
         loss = 0.0
         for i in range(self.batch_size):
             for grid_x in range(self.grid):
@@ -58,7 +50,7 @@ class Loss(nn.Module):
                                  (math.sqrt(predict.detections[j].h) - math.sqrt(target.detections[j].h)) ** 2)
         return loss * self.lamda_coord
 
-    def confidence_loss(self):
+    def confidence_loss(self,predict, annotation):
         loss = 0.0
         for i in range(self.batch_size):
             for grid_x in range(self.grid):
@@ -73,7 +65,7 @@ class Loss(nn.Module):
                             loss += (predict.detections[j].confidence - target.detections[j].confidence) ** 2
         return loss
 
-    def classification_loss(self):
+    def classification_loss(self,predict, annotation):
         loss = 0.0
         for i in range(self.batch_size):
             for grid_x in range(self.grid):
@@ -83,6 +75,13 @@ class Loss(nn.Module):
                     for j in range(self.clazz):
                         loss += (target.class_probabilities[j] - predict.class_probabilities[j]) ** 2
         return loss
-    def responsible_box(self):
-        for box in self.target.detections:
-        IOU()
+    def responsible_box(self,predict, annotation):
+
+
+if __name__ == '__main__':
+    import Config
+    import torch
+    import YOLO
+    cfg = config.Config()
+    predict = torch.randn(32, 1470)
+    Loss(cfg).forward()

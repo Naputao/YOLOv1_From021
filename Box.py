@@ -1,13 +1,13 @@
 import torch
 
 
-class Detection:
+class Box:
     def __init__(self, tensor, grid_x, grid_y):
         assert isinstance(tensor, torch.Tensor), f"Not a Tensor: {type(tensor)}"
         assert tensor.shape[0] == 5, f"Tensor shape is incorrect: {tensor.shape}"
         self.tensor = tensor
-        self.grid_x = grid_x
-        self.grid_y = grid_y
+        self.grid_x = grid_x    #box in grid_x line of grid
+        self.grid_y = grid_y    #box in grid_y column of grid
 
     @property
     def x(self):

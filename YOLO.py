@@ -1,14 +1,8 @@
 import torch
 import torch.nn as nn
-
-from Grid import Grid
-
-
 class YOLO(nn.Module):
-    def __init__(self, grid=7, bounding_boxes=2, clazz=20):
-        self.clazz = clazz
-        self.bounding_boxes = bounding_boxes
-        self.grid = grid
+    def __init__(self, config):
+        self.config = config
 
         super(YOLO, self).__init__()
         self.conv_layers_1 = nn.Sequential(
@@ -56,7 +50,7 @@ class YOLO(nn.Module):
             nn.Linear(7 * 7 * 1024, 4096)
         )
         self.conn_layers_8 = nn.Sequential(
-            nn.Linear(4096, 7 * 7 * (5*self.bounding_boxes+self.clazz))
+            nn.Linear(4096, 7 * 7 * (5*self.config.bounding_boxes+self.config.clazz))
         )
 
     def forward(self, x):
@@ -74,9 +68,11 @@ class YOLO(nn.Module):
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = YOLO()
+    import Config
+    cfg = Config.Config()
+    model = YOLO(cfg)
     model.to(device)
-    input_tensor = torch.randn(1, 3, 448, 448)
+    input_tensor = torch.randn(32, 3, 448, 448)
     input_tensor = input_tensor.to(device)
     output = model(input_tensor)
     print(output.shape)
