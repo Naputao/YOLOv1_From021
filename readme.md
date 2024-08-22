@@ -72,12 +72,27 @@ label需要读取xml文件，然后转化成(batch_size,4)的tensor,
 
 3.将Loss Model中的各个参数统一用config替换
 
+4.YOLO论文中给出20个参数用于检测类别，但是ILSVRC数据集的类别有成千上百个，
+
+所以一个办法是训练另一个模型，以这20个参数为输入，输出为1个类别以及confidence
+
+但是这里还未想好怎么实现，并且现阶段的目标只是让YOLO知道哪个网格里有东西，这个东西有多大
+
+所以等到之后有机会再实现，所以目前损失函数缺少了分类损失
+
+
 # 数据定义
 1.模型的输出：为(batch_size,1470)大小的tensor,转为(batch_size,7,7,30)的Tensor
 
 代表7*7的grid，最后一维0-4,5-9依次对应x,y,w,h,confidence,10-29对应class_probability
 
-2.targets: 为(batch_size,4)大小的tensor，最后一维依次对应x,y,w,h
+2.targets: 为(batch_size,4*n)大小的tensor，最后一维依次对应(x,y,w,h)*n个检测框,
+
+
+
+
+
+
 
 
 # 数据处理流程

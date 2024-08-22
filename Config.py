@@ -34,6 +34,7 @@ class Config:
             transforms.Resize((448, 448)),
             transforms.ToTensor()
         ])
+        self.batch_size = 16
 
 if __name__ == '__main__':
     import Image

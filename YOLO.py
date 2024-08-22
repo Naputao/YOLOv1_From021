@@ -7,18 +7,21 @@ class YOLO(nn.Module):
         super(YOLO, self).__init__()
         self.conv_layers_1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.LeakyReLU(negative_slope=0.01),
         )
         self.conv_layers_2 = nn.Sequential(
             nn.Conv2d(64, 192, kernel_size=3, stride=1, padding=1),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.LeakyReLU(negative_slope=0.01),
         )
         self.conv_layers_3 = nn.Sequential(
             nn.Conv2d(192, 128, kernel_size=1, stride=1, padding=0),
             nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
             nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.LeakyReLU(negative_slope=0.01),
         )
         self.conv_layers_4 = nn.Sequential(
             nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
@@ -31,7 +34,8 @@ class YOLO(nn.Module):
             nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0),
             nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.LeakyReLU(negative_slope=0.01),
         )
         self.conv_layers_5 = nn.Sequential(
             nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),
@@ -39,18 +43,22 @@ class YOLO(nn.Module):
             nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),
             nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1)
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1),
+            nn.LeakyReLU(negative_slope=0.01),
         )
         self.conv_layers_6 = nn.Sequential(
             nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1)
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(negative_slope=0.01),
         )
         self.flatten = nn.Flatten()
         self.conn_layers_7 = nn.Sequential(
-            nn.Linear(7 * 7 * 1024, 4096)
+            nn.Linear(7 * 7 * 1024, 4096),
+            nn.LeakyReLU(negative_slope=0.01),
         )
         self.conn_layers_8 = nn.Sequential(
-            nn.Linear(4096, 7 * 7 * (5*self.config.bounding_boxes+self.config.clazz))
+            nn.Linear(4096, 7 * 7 * (5*self.config.bounding_boxes+self.config.clazz)),
+            nn.LeakyReLU(negative_slope=0.01),
         )
 
     def forward(self, x):
@@ -63,7 +71,8 @@ class YOLO(nn.Module):
         x = self.flatten(x)
         x = self.conn_layers_7(x)
         x = self.conn_layers_8(x)
-        return x
+        x = (torch.tanh(x)+1)/2
+        return x.view(-1,self.config.grid,self.config.grid,self.config.clazz + self.config.bounding_boxes * 5)
 
 
 if __name__ == '__main__':
