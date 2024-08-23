@@ -1,7 +1,6 @@
 import torch
-from numpy.ma.extras import vstack
-from torchgen.executorch.api.types import tensorT
-
+import torch.nn.utils.rnn as rnn_utils
+import math
 
 class Annotation:
     def __init__(self,xml,cfg):
@@ -9,7 +8,7 @@ class Annotation:
         self.cfg = cfg
     @property
     def objects(self):
-        return [Object(obj,self.cfg.input_width/self.width,self.cfg.input_height/self.height) for obj in self.xml.findall('.//object')]
+        return [Object(obj,self.width,self.height,self.cfg) for obj in self.xml.findall('.//object')]
     @property
     def folder(self):
         return float(self.xml.find('.//folder').text)
@@ -22,40 +21,19 @@ class Annotation:
     def to_list(self):
         ts = []
         for obj in self.objects:
-            ts.append(obj.to_tensor())
+            ts.append(obj.tensor)
         return ts
 class Object:
-    def __init__(self,xml,scale_x,scale_y):
-        self.xml = xml
-        self.scale_x = scale_x
-        self.scale_y = scale_y
-
-    @property
-    def bottom(self):
-        return float(self.xml.find(".//ymax").text)*self.scale_y
-    @property
-    def left(self):
-        return float(self.xml.find(".//xmin").text)*self.scale_x
-    @property
-    def top(self):
-        return float(self.xml.find(".//ymin").text)*self.scale_y
-    @property
-    def right(self):
-        return float(self.xml.find(".//xmax").text)*self.scale_x
-    @property
-    def width(self):
-        return self.right - self.left
-    @property
-    def height(self):
-        return self.bottom - self.top
-    @property
-    def x(self):
-        return (self.left + self.right) /2
-    @property
-    def y(self):
-        return (self.top + self.bottom) /2
-    def to_tensor(self):
-        return torch.tensor([self.x, self.y, self.width, self.height])
+    def __init__(self,xml,scale_x,scale_y,cfg):
+        self.bottom = float(xml.find(".//ymax").text)
+        self.top = float(xml.find(".//ymin").text)
+        self.left = float(xml.find(".//xmin").text)
+        self.right = float(xml.find(".//xmax").text)
+        self.x,self.gx = math.modf((self.left + self.right)*cfg.grid/2/scale_x)
+        self.y,self.gy = math.modf((self.top + self.bottom)*cfg.grid/2/scale_y)
+        self.w = (self.right - self.left)/scale_x
+        self.h = (self.bottom - self.top)/scale_y
+        self.tensor = torch.tensor([self.x, self.y, self.w, self.h,self.gx,self.gy]).to(cfg.device)
 if __name__ == '__main__':
     from Config import Config
     import xml.etree.ElementTree as ET

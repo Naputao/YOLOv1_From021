@@ -3,7 +3,7 @@ from torch.onnx.symbolic_opset9 import tensor
 class Box:
     def __init__(self, tensor):
         assert isinstance(tensor, torch.Tensor), f"Not a Tensor: {type(tensor)}"
-        assert tensor.shape[0] == 5 or tensor.shape[0] ==4 , f"Tensor shape is incorrect: {tensor.shape}"
+        assert tensor.shape[0] == 5 or tensor.shape[0] ==4 or tensor.shape[0]==7, f"Tensor shape is incorrect: {tensor.shape}"
         self.tensor = tensor
 
     @property

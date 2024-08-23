@@ -1,16 +1,20 @@
 import os
 import torchvision.transforms as transforms
+import torch
 class Config:
     def __init__(self):
         #model config
         self.grid=7
         self.bounding_boxes=2
         self.clazz=20
+        self.grid_length = self.bounding_boxes * 5 + self.clazz
+
         self.input_width = 448
         self.input_height = 448
         self.grid_width = self.input_height // self.grid
         self.grid_height = self.input_height // self.grid
 
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #Loss config
         self.lamda_coord = 5
         self.lamda_noobj = 0.5
