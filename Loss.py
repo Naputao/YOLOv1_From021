@@ -43,24 +43,25 @@ class Loss(nn.Module):
         w_target =target[...,2]
         h_target =target[...,3]
 
-        top_target =y_target-3.5*h_target
-        bottom_target =y_target+3.5*h_target
-        left_target =x_target-3.5*w_target
-        right_target =x_target+3.5*w_target
-
-        top_target = torch.stack([top_target,top_target],dim=1)
-        bottom_target = torch.stack([bottom_target,bottom_target],dim=1)
-        left_target = torch.stack([left_target,left_target],dim=1)
-        right_target = torch.stack([right_target,right_target],dim=1)
+        top_target =(y_target-3.5*h_target).unsqueeze(1).repeat(1,2)
+        bottom_target =(y_target+3.5*h_target).unsqueeze(1).repeat(1,2)
+        left_target =(x_target-3.5*w_target).unsqueeze(1).repeat(1,2)
+        right_target =(x_target+3.5*w_target).unsqueeze(1).repeat(1,2)
 
         top_inter = torch.max(top_grid, top_target)
         bottom_inter = torch.min(bottom_grid, bottom_target)
         left_inter = torch.max(left_grid, left_target)
         right_inter = torch.min(right_grid, right_target)
 
-        area_inter = (bottom_inter - top_inter)*(right_inter-left_inter)
-        area_target = (bottom_target - top_target)*(right_target - left_target)
-        area_grid = (bottom_grid - top_grid)*(right_grid - left_grid)
+
+        w_inter = right_inter-left_inter
+        w_inter = torch.where(w_inter>0,w_inter,torch.tensor(0.0))#set 0 when width is a negative
+        h_inter = top_inter-bottom_inter
+        h_inter = torch.where(h_inter>0,h_inter,torch.tensor(0.0))#set 0 when width is a negative
+
+        area_inter = w_inter*h_inter
+        area_target = (w_target*h_target*49).unsqueeze(1).repeat(1,2)
+        area_grid = w_grid*h_grid*49
 
         area_total = area_target + area_grid - area_inter
 
@@ -240,13 +241,14 @@ class Loss(nn.Module):
 if __name__ == '__main__':
     import Config
     import YOLO
+    from ALLZERO import *
     from Dataset_VOC2012 import Dataset
     from torch.utils.data import DataLoader
     import os
     cfg = Config.Config()
     dataset = Dataset(cfg)
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, collate_fn=dataset.collate_fn)
-    model = YOLO.YOLO(cfg)
+    model = ALLZERO(cfg)
     device = torch.device('cuda')
     model.to(device)
     criterion = Loss(cfg).to(device)

@@ -21,7 +21,9 @@ class Config:
         #Loss config
         self.lamda_coord = 5
         self.lamda_noobj = 0.5
-
+        # NMS config
+        self.minimum_confidence = 0.3
+        self.maximum_iou = 0.2
         #dataset config
         self.cwd_path = os.getcwd()
         # self.zip_dataset_path = "E:/Downloads/imagenet-object-localization-challenge.zip"
@@ -34,7 +36,7 @@ class Config:
         # self.train_annotations_path = self.annotations_path + "/train"
         # self.val_annotations_path = self.annotations_path + "/val"
         # self.current_annotations_path = self.train_annotations_path + "/n01440764/n01440764_10040.xml"
-        # self.current_images_path = self.train_images_path + "/n01440764/n01440764_10040.JPEG"
+        self.current_images_path = "E:/WorkDir/YOLOv1_From021/Dataset/VOC2012/JPEGImages/2007_000032.jpg"
 
         self.zip_dataset_path = "E:/Downloads/VOCtrainval_11-May-2012.tar"
         self.dateset_path = "VOCdevkit/VOC2012"
@@ -46,8 +48,8 @@ class Config:
             transforms.ToTensor()
         ])
         self.batch_size = 16
-        self.saved_model_path = "YOLO_0_1724665205.6755564.pth"
-
+        # self.saved_model_path = "YOLO_0_1724736447.720819.pth"
+        self.saved_model_path = "YOLO_0_1724753307.9434943.pth"
 if __name__ == '__main__':
     import Image
     cfg = Config()

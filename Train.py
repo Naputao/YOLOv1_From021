@@ -8,6 +8,7 @@ import Loss
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import os
+import torch.nn as nn
 
 def adjust_learning_rate(optimizer, epoch):
     warmup_epochs, target_lr, initial_lr = 5,1e-3,1e-5
@@ -32,9 +33,28 @@ if __name__ == '__main__':
     if saved_model_path is not None:
         print(f"loading models on {saved_model_path}")
         model.load_state_dict(torch.load(saved_model_path,weights_only=True))
+    else:
+        # 定义一个初始化函数
+        def initialize_weights(m):
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                torch.nn.init.constant_(m.weight, 1)
+                torch.nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                torch.nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
+        # 对模型应用初始化
+        print("initializing...")
+        model.apply(initialize_weights)
+        print("done")
     criterion = Loss.Loss(cfg).to(device)
     num_epochs = 1
-    optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.3, weight_decay=0.0005)
+    # optimizer = optim.SGD(model.parameters(), lr=0.00001, momentum=0.7, weight_decay=0.0005)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     loss_total_last = 0.0
 
     for epoch in range(num_epochs):
