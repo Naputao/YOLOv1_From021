@@ -14,15 +14,16 @@ class Loss(nn.Module):
         self.config = config
 
     def forward(self, output, target):
-        batch_size = self.config.batch_size
+        batch_size = output.shape[0]
+        target_size = target.shape[0]
         device = self.config.device
         lamda_coord = self.config.lamda_coord
         lamda_noobj = self.config.lamda_noobj
         bounding_boxes = self.config.bounding_boxes
         gridn = self.config.grid
         clazz = self.config.clazz
-
-        batch_id =  target[...,6].view(-1).int()
+        target_id = torch.arange(target_size)
+        batch_id =  target[...,-1].view(-1).int()
         gx = target[...,4].int()
         gy = target[...,5].int()
         grid = output[batch_id,gx,gy]
@@ -31,6 +32,7 @@ class Loss(nn.Module):
         w_grid = grid[...,2:bounding_boxes*5:5]
         h_grid = grid[...,3:bounding_boxes*5:5]
         c_grid = grid[...,4:bounding_boxes*5:5]
+
         top_grid = y_grid-3.5*h_grid
         bottom_grid = y_grid+3.5*h_grid
         left_grid = x_grid-3.5*w_grid
@@ -66,11 +68,12 @@ class Loss(nn.Module):
 
         argmax_iou = torch.argmax(iou,dim=1)
 
-        x_responsible = torch.gather(x_grid, 1, argmax_iou.unsqueeze(dim=1)).squeeze()
-        y_responsible = torch.gather(y_grid, 1, argmax_iou.unsqueeze(dim=1)).squeeze()
-        w_responsible = torch.gather(w_grid, 1, argmax_iou.unsqueeze(dim=1)).squeeze()
-        h_responsible = torch.gather(h_grid, 1, argmax_iou.unsqueeze(dim=1)).squeeze()
-        c_responsible = torch.gather(c_grid, 1, argmax_iou.unsqueeze(dim=1)).squeeze()
+        x_responsible = x_grid[target_id,argmax_iou]
+        y_responsible = y_grid[target_id,argmax_iou]
+        w_responsible = w_grid[target_id,argmax_iou]
+        h_responsible = h_grid[target_id,argmax_iou]
+        c_responsible = c_grid[target_id,argmax_iou]
+
         loss = lamda_coord *torch.sum((x_target-x_responsible)**2+
          (y_target-y_responsible)**2+
          (torch.sqrt(w_target)-torch.sqrt(w_responsible))**2+
@@ -78,12 +81,14 @@ class Loss(nn.Module):
         loss += torch.sum((c_responsible-1)**2-lamda_noobj * c_responsible**2)
 
         c = output[...,4:5*bounding_boxes:5]
-
         loss += torch.sum(lamda_noobj * c **2)
-        classification = output[...,5*bounding_boxes:]
-        classification_loss = torch.sum((classification-torch.full([batch_size,gridn,gridn,clazz], 0.5,device=device))**2)
-        loss += classification_loss
-        return loss
+
+        classification_grid = grid[..., 5*bounding_boxes:]
+        classification_target = target[..., 6].int()
+        classification_responsible = classification_grid[target_id,classification_target]
+        loss +=(classification_grid**2).sum()
+        loss +=((classification_responsible-1)**2-classification_responsible**2).sum()
+        return loss/batch_size
 
     # def forward(self,output, target):
     #     loss = 0.0
@@ -235,24 +240,30 @@ class Loss(nn.Module):
 if __name__ == '__main__':
     import Config
     import YOLO
-    import Dataset
+    from Dataset_VOC2012 import Dataset
     from torch.utils.data import DataLoader
+    import os
     cfg = Config.Config()
-    dataset = Dataset.Dataset(cfg)
+    dataset = Dataset(cfg)
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, collate_fn=dataset.collate_fn)
     model = YOLO.YOLO(cfg)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda')
     model.to(device)
-    count = 10
+    criterion = Loss(cfg).to(device)
+    saved_model_path = cfg.saved_model_path
+    if saved_model_path is not None:
+        print(f"loading models on {saved_model_path}")
+        model.load_state_dict(torch.load(saved_model_path, weights_only=True))
     print(time.time())
-    for data_batch, target in dataloader:
-
-        output = model.forward(data_batch.to(device))
-        print(Loss(cfg).forward(output, target))
-        count-=1
-        if count==0:
-            print(time.time())
-            break
+    loss_total = 0.0
+    with torch.no_grad():
+        for data_batch, target in dataloader:
+            output = model(data_batch.to(device))
+            loss = criterion(output, target)
+            loss_total += loss
+            print(loss)
+    print(loss_total)
+    print(time.time())
     # output = torch.rand([cfg.batch_size,cfg.grid,cfg.grid,cfg.bounding_boxes*5+cfg.clazz])
     # target = [[torch.rand(4)*448]*2]*cfg.batch_size
     # print(Loss(cfg).forward(output, target))

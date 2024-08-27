@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.patches as patches
-import Annotation
+import Annotation_ILSVRC
 class Image:
     def __init__(self, config):
         self.config = config

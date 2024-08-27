@@ -3,10 +3,7 @@ import Config
 import xml.etree.ElementTree as ET
 from PIL import Image
 import torch
-from Annotation import Annotation
-
-
-
+from Annotation_ILSVRC import Annotation
 
 class Dataset:
     def __init__(self, cfg):

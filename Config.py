@@ -1,6 +1,9 @@
 import os
 import torchvision.transforms as transforms
 import torch
+from torch.cuda import device
+
+
 class Config:
     def __init__(self):
         #model config
@@ -14,31 +17,36 @@ class Config:
         self.grid_width = self.input_height // self.grid
         self.grid_height = self.input_height // self.grid
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda')
         #Loss config
         self.lamda_coord = 5
         self.lamda_noobj = 0.5
 
         #dataset config
-        self.zip_dataset_path = "E:/Download/imagenet-object-localization-challenge.zip"
         self.cwd_path = os.getcwd()
-        self.dateset_path = "ILSVRC"
-        self.annotations_path = self.dateset_path + "/Annotations/CLS-LOC"
-        self.images_path = self.dateset_path + "/Data/CLS-LOC"
-        self.train_images_path = self.images_path + "/train"
-        self.test_images_path = self.images_path + "/test"
-        self.val_images_path = self.images_path + "/val"
-        self.train_annotations_path = self.annotations_path + "/train"
-        self.val_annotations_path = self.annotations_path + "/val"
+        # self.zip_dataset_path = "E:/Downloads/imagenet-object-localization-challenge.zip"
+        # self.dateset_path = "ILSVRC"
+        # self.annotations_path = self.dateset_path + "/Annotations/CLS-LOC"
+        # self.images_path = self.dateset_path + "/Data/CLS-LOC"
+        # self.train_images_path = self.images_path + "/train"
+        # self.test_images_path = self.images_path + "/test"
+        # self.val_images_path = self.images_path + "/val"
+        # self.train_annotations_path = self.annotations_path + "/train"
+        # self.val_annotations_path = self.annotations_path + "/val"
+        # self.current_annotations_path = self.train_annotations_path + "/n01440764/n01440764_10040.xml"
+        # self.current_images_path = self.train_images_path + "/n01440764/n01440764_10040.JPEG"
 
-        self.current_annotations_path = self.train_annotations_path + "/n01440764/n01440764_10040.xml"
-        self.current_images_path = self.train_images_path + "/n01440764/n01440764_10040.JPEG"
-
+        self.zip_dataset_path = "E:/Downloads/VOCtrainval_11-May-2012.tar"
+        self.dateset_path = "VOCdevkit/VOC2012"
+        self.annotations_path = self.dateset_path + "/Annotations/"
+        self.images_path = self.dateset_path + "/JPEGImages/"
+        self.current_annotations_path = "E:/WorkDir/YOLOv1_From021/Dataset/VOC2012/Annotations/2007_000032.xml"
         self.transform = transforms.Compose([
             transforms.Resize((448, 448)),
             transforms.ToTensor()
         ])
         self.batch_size = 16
+        self.saved_model_path = "YOLO_0_1724665205.6755564.pth"
 
 if __name__ == '__main__':
     import Image

@@ -63,7 +63,7 @@ class YOLO(nn.Module):
         x = self.flatten(x)
         x = self.conn_layers_7(x)
         x = self.conn_layers_8(x)
-        x = (torch.tanh(x)+1)/2
+        x = (torch.sin(x)+1)/2
         return x.view(-1,self.config.grid,self.config.grid,self.config.clazz + self.config.bounding_boxes * 5)
 
 
