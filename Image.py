@@ -51,9 +51,11 @@ class Image:
                 ax.add_patch(rect)
             plt.show()
         return self
-    def show_with_annotation_and_detection(self,imgs,targets,output):
+    def show_with_annotation_and_detection(self,imgs,targets,output,nms):
+        if nms is None:
+            nms = NMS.NMS(self.config).filter
         imgs = imgs.cpu()
-        output = NMS.NMS(self.config).filter(output.cpu())
+        output = nms(output.cpu())
         print(output)
         table = {}
         targets = targets.cpu()

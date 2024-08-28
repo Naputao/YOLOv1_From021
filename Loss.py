@@ -19,11 +19,13 @@ class Loss(nn.Module):
         device = self.config.device
         lamda_coord = self.config.lamda_coord
         lamda_noobj = self.config.lamda_noobj
+        lamda_obj = self.config.lamda_obj
+        lamda_size = self.config.lamda_size
         bounding_boxes = self.config.bounding_boxes
         gridn = self.config.grid
         clazz = self.config.clazz
         target_id = torch.arange(target_size)
-        batch_id =  target[...,-1].view(-1).int()
+        batch_id =  target[...,-1].int()
         gx = target[...,4].int()
         gy = target[...,5].int()
         grid = output[batch_id,gx,gy]
@@ -56,7 +58,7 @@ class Loss(nn.Module):
 
         w_inter = right_inter-left_inter
         w_inter = torch.where(w_inter>0,w_inter,torch.tensor(0.0))#set 0 when width is a negative
-        h_inter = top_inter-bottom_inter
+        h_inter = bottom_inter-top_inter
         h_inter = torch.where(h_inter>0,h_inter,torch.tensor(0.0))#set 0 when width is a negative
 
         area_inter = w_inter*h_inter
@@ -75,21 +77,22 @@ class Loss(nn.Module):
         h_responsible = h_grid[target_id,argmax_iou]
         c_responsible = c_grid[target_id,argmax_iou]
 
-        loss = lamda_coord *torch.sum((x_target-x_responsible)**2+
-         (y_target-y_responsible)**2+
-         (torch.sqrt(w_target)-torch.sqrt(w_responsible))**2+
-         (torch.sqrt(h_target)-torch.sqrt(h_responsible))**2)
-        loss += torch.sum((c_responsible-1)**2-lamda_noobj * c_responsible**2)
+        loss = (lamda_coord*(torch.sum((x_target-x_responsible)**2)+
+                             torch.sum((y_target-y_responsible)**2))+
+                lamda_size*(torch.sum((torch.sqrt(w_target)-torch.sqrt(w_responsible))**2)+
+                            torch.sum((torch.sqrt(h_target)-torch.sqrt(h_responsible))**2)))
+
+        loss += lamda_obj * torch.sum((c_responsible-1)**2)-lamda_noobj * torch.sum(c_responsible**2)
 
         c = output[...,4:5*bounding_boxes:5]
-        loss += torch.sum(lamda_noobj * c **2)
+        loss += lamda_noobj * torch.sum(c **2)
 
         classification_grid = grid[..., 5*bounding_boxes:]
         classification_target = target[..., 6].int()
         classification_responsible = classification_grid[target_id,classification_target]
         loss +=(classification_grid**2).sum()
         loss +=((classification_responsible-1)**2-classification_responsible**2).sum()
-        return loss/batch_size
+        return loss
 
     # def forward(self,output, target):
     #     loss = 0.0
@@ -240,7 +243,7 @@ class Loss(nn.Module):
 
 if __name__ == '__main__':
     import Config
-    import YOLO
+    from YOLO import YOLO
     from ALLZERO import *
     from Dataset_VOC2012 import Dataset
     from torch.utils.data import DataLoader
@@ -248,8 +251,8 @@ if __name__ == '__main__':
     cfg = Config.Config()
     dataset = Dataset(cfg)
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, collate_fn=dataset.collate_fn)
-    model = ALLZERO(cfg)
-    device = torch.device('cuda')
+    model = YOLO(cfg).eval()
+    device = cfg.device
     model.to(device)
     criterion = Loss(cfg).to(device)
     saved_model_path = cfg.saved_model_path
@@ -258,9 +261,12 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(saved_model_path, weights_only=True))
     print(time.time())
     loss_total = 0.0
+    from Image import Image
+    img = Image(cfg)
     with torch.no_grad():
         for data_batch, target in dataloader:
             output = model(data_batch.to(device))
+            img.show_with_annotation_and_detection_no_filter(data_batch,target,output)
             loss = criterion(output, target)
             loss_total += loss
             print(loss)

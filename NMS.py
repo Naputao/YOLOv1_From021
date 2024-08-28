@@ -80,8 +80,23 @@ class NMS:
                 batch_bnbox_filtered.append(j)
             bnbox_filtered.append(batch_bnbox_filtered)
         return bnbox_filtered
-
+    def filter_max_confident(self,ts):
+        batch_size = ts.shape[0]
+        bnbox_size = self.cfg.bounding_boxes
+        grid = self.cfg.grid
+        bnbox = ts[..., 0:5 * bnbox_size].reshape(batch_size, grid * grid * bnbox_size, 5)
+        seq1 = torch.arange(7).repeat_interleave(2).repeat(7).repeat(batch_size, 1).unsqueeze(2)
+        seq2 = torch.arange(7).repeat_interleave(14).repeat(batch_size, 1).unsqueeze(2)
+        bnbox = torch.cat((bnbox, seq2, seq1), dim=-1)
+        bnbox_filtered = []
+        for i in bnbox:
+            batch_bnbox_filtered = []
+            top5_values, top5_indices = torch.topk(i[...,4], 1)
+            for j in i[top5_indices]:
+                batch_bnbox_filtered.append(j)
+            bnbox_filtered.append(batch_bnbox_filtered)
+        return bnbox_filtered
 if __name__ == '__main__':
     cfg = Config()
     nms = NMS(cfg)
-    print(nms.no_filter(torch.rand([16,7,7,30])))
+    print(nms.filter_max_confident(torch.rand([16,7,7,30]),5))

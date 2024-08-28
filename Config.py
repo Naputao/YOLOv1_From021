@@ -17,10 +17,12 @@ class Config:
         self.grid_width = self.input_height // self.grid
         self.grid_height = self.input_height // self.grid
 
-        self.device = torch.device('cuda')
+
         #Loss config
         self.lamda_coord = 5
         self.lamda_noobj = 0.5
+        self.lamda_obj = 1
+        self.lamda_size = 10
         # NMS config
         self.minimum_confidence = 0.3
         self.maximum_iou = 0.2
@@ -49,7 +51,8 @@ class Config:
         ])
         self.batch_size = 16
         # self.saved_model_path = "YOLO_0_1724736447.720819.pth"
-        self.saved_model_path = "YOLO_0_1724753307.9434943.pth"
+        self.saved_model_path = "YOLO_0_1724838256.5124567.pth"
+        self.device = torch.device('cuda')
 if __name__ == '__main__':
     import Image
     cfg = Config()

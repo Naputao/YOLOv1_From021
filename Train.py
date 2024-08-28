@@ -52,11 +52,14 @@ if __name__ == '__main__':
         model.apply(initialize_weights)
         print("done")
     criterion = Loss.Loss(cfg).to(device)
-    num_epochs = 1
-    # optimizer = optim.SGD(model.parameters(), lr=0.00001, momentum=0.7, weight_decay=0.0005)
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    num_epochs = 3
+    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.0005)
+    optimizer = optim.Adam(model.parameters(), lr=0.0003)
     loss_total_last = 0.0
-
+    from Image import Image
+    from NMS import NMS
+    img = Image(cfg)
+    nms = NMS(cfg).filter_max_confident
     for epoch in range(num_epochs):
         loss_total = 0.0
         for batch_id,(data_batch, target) in enumerate(dataloader):
@@ -64,8 +67,11 @@ if __name__ == '__main__':
             loss = criterion(output, target)
             loss.backward()
             loss_total += loss.item()
-            optimizer.step()
-            optimizer.zero_grad()
+            if batch_id%4==0:
+                optimizer.step()
+                optimizer.zero_grad()
             print(f'Epoch [{epoch+1}/135] Batch [{batch_id}/1070], Average Loss: {loss.item():.4f}')
+            if batch_id%50==0:
+                img.show_with_annotation_and_detection_no_filter(data_batch[0].unsqueeze(0),target[target[...,-1].int()==0],output[0].unsqueeze(0))
         print(f'Epoch [{epoch + 1}/135], Loss: {loss_total:.4f}')
         torch.save(model.state_dict(), f"YOLO_{epoch}_{time.time()}.pth")
