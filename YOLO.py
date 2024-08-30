@@ -5,100 +5,81 @@ class YOLO(nn.Module):
         self.config = config
 
         super(YOLO, self).__init__()
-        self.conv_layers_1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3),
-            nn.BatchNorm2d(64),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.conv_layers_2 = nn.Sequential(
-            nn.Conv2d(64, 192, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(192),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.conv_layers_3 = nn.Sequential(
-            nn.Conv2d(192, 128, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(128),
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(256),
-            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(256),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.conv_layers_4 = nn.Sequential(
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(256),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(256),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(256),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(256),
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(1024),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.conv_layers_5 = nn.Sequential(
-            nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(1024),
-            nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(512),
-            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(1024),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(1024),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(1024),
-        )
-        self.conv_layers_6 = nn.Sequential(
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(1024),
+        self.backbone = BackBoneYOLO(config).conv_layers
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=2, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
         )
         self.flatten = nn.Flatten()
-        self.conn_layers_7 = nn.Sequential(
-            nn.Linear(7 * 7 * 1024, 4096),
-            nn.BatchNorm1d(4096),
-        )
-        self.conn_layers_8 = nn.Sequential(
-            nn.Linear(4096, 7 * 7 * (5*self.config.bounding_boxes+self.config.clazz)),
-            nn.BatchNorm1d(7 * 7 * (5*self.config.bounding_boxes+self.config.clazz)),
-            nn.Sigmoid()
+        self.conn_layers = nn.Sequential(
+            nn.Linear(7 * 7 * 1024, 4096),nn.LeakyReLU(0.1),
+            nn.Linear(4096, 7 * 7 * (5*self.config.bounding_boxes+self.config.clazz))
         )
 
     def forward(self, x):
-        x = self.conv_layers_1(x)
-        x = self.conv_layers_2(x)
-        x = self.conv_layers_3(x)
-        x = self.conv_layers_4(x)
-        x = self.conv_layers_5(x)
-        x = self.conv_layers_6(x)
+        x = self.backbone(x)
+        x = self.conv_layers(x)
         x = self.flatten(x)
-        x = self.conn_layers_7(x)
-        x = self.conn_layers_8(x)
+        x = self.conn_layers(x)
         return x.view(-1,self.config.grid,self.config.grid,self.config.clazz + self.config.bounding_boxes * 5)
+class PreTrainYOLO(nn.Module):
+    def __init__(self, config):
+        self.config = config
+        super(PreTrainYOLO, self).__init__()
+        self.backbone = BackBoneYOLO(config).conv_layers
+        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.flatten = nn.Flatten()
+        self.fc = nn.Linear(1024, 1000)
+    def forward(self, x):
+        x = self.backbone(x)
+        x = self.avg_pool(x)
+        x = self.flatten(x)
+        x = self.fc(x)
+        return x
 
+
+class BackBoneYOLO(nn.Module):
+    def __init__(self, config):
+        self.config = config
+        super(BackBoneYOLO, self).__init__()
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3),nn.LeakyReLU(0.1),
+            nn.MaxPool2d(kernel_size=2, stride=2),nn.LeakyReLU(0.1),
+            nn.Conv2d(64, 192, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.MaxPool2d(kernel_size=2, stride=2),nn.LeakyReLU(0.1),
+            nn.Conv2d(192, 128, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.MaxPool2d(kernel_size=2, stride=2),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 512, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.MaxPool2d(kernel_size=2, stride=2),nn.LeakyReLU(0.1),
+            nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+            nn.Conv2d(1024, 512, kernel_size=1, stride=1, padding=0),nn.LeakyReLU(0.1),
+            nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),nn.LeakyReLU(0.1),
+        )
+    def forward(self, x):
+        return self.conv_layers(x)
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     import Config
     cfg = Config.Config()
-    model = YOLO(cfg)
+    model = PreTrainYOLO(cfg)
     model.to(device)
-    input_tensor = torch.randn(32, 3, 448, 448)
+    input_tensor = torch.randn(32, 3, 224, 224)
     input_tensor = input_tensor.to(device)
-    output = model(input_tensor)
+    output = model.forward(input_tensor)
     print(output.shape)

@@ -91,7 +91,7 @@ class NMS:
         bnbox_filtered = []
         for i in bnbox:
             batch_bnbox_filtered = []
-            top5_values, top5_indices = torch.topk(i[...,4], 1)
+            top5_values, top5_indices = torch.topk(i[...,4], 3)
             for j in i[top5_indices]:
                 batch_bnbox_filtered.append(j)
             bnbox_filtered.append(batch_bnbox_filtered)

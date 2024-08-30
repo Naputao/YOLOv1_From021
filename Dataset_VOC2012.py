@@ -10,7 +10,7 @@ import io
 class Dataset:
     def __init__(self, cfg):
         self.cfg = cfg
-        self.file = tarfile.open(self.cfg.zip_dataset_path, 'r')
+        self.file = tarfile.open(self.cfg.VOC2012_dataset_path, 'r')
         self.file_list = sorted(list(
                         {member.name[-15:-4]
                         for member in self.file.getmembers()
@@ -38,8 +38,7 @@ class Dataset:
         data_batch = torch.stack([item[0] for item in batch])
         labels_batch = torch.stack(
             [torch.cat((ts, torch.tensor([item_id], device=self.cfg.device))) for item_id, item in enumerate(batch) for
-             ts in
-             item[1]])
+             ts in item[1]])
         return data_batch, labels_batch
 
 if __name__ == '__main__':

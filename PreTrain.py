@@ -3,32 +3,19 @@ import time
 import Config
 import torch
 import YOLO
-from Dataset_VOC2012 import Dataset
+from Dataset_ILSVRC import Dataset
 import Loss
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import os
 import torch.nn as nn
 
-def adjust_learning_rate(optimizer, epoch):
-    warmup_epochs, target_lr, initial_lr = 5,1e-3,1e-5
-    if epoch < warmup_epochs:
-        lr = initial_lr + (target_lr - initial_lr) * (epoch / warmup_epochs)
-    elif epoch < 50:
-        lr = target_lr
-    elif epoch < 105:
-        lr = 1e-3
-    else:
-        lr = 1e-4
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = 0.5*lr
 if __name__ == '__main__':
-    os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     cfg = Config.Config()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset = Dataset(cfg)
-    dataloader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=False, collate_fn=dataset.collate_fn)
-    model = YOLO.YOLO(cfg).to(device)
+    dataloader = DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True, collate_fn=dataset.collate_fn)
+    model = YOLO.PreTrainYOLO(cfg).to(device)
     saved_model_path = cfg.saved_model_path
     if saved_model_path is not None:
         print(f"loading models on {saved_model_path}")
@@ -49,15 +36,14 @@ if __name__ == '__main__':
         print("initializing...")
         model.apply(initialize_weights)
         print("done")
-    criterion = Loss.Loss(cfg).to(device)
-    num_epochs = 135
-    optimizer = optim.SGD(model.parameters(), lr=5e-6, momentum=0.1, weight_decay=0.0005)
-    # optimizer = optim.Adam(model.parameters(), lr=5e-6)
+    criterion = Loss.PreTrainLoss(cfg).to(device)
+    num_epochs = 1000
+    # optimizer = optim.SGD(model.parameters(), lr=5e-6, momentum=0.1, weight_decay=0.0005)
+    optimizer = optim.Adam(model.parameters(), lr=5e-6)
     loss_total_last = 0.0
     from Image import Image
     from NMS import NMS
     img = Image(cfg)
-    nms = NMS(cfg).filter_max_confident
     for epoch in range(num_epochs):
         loss_total = 0.0
         for batch_id,(data_batch, target) in enumerate(dataloader):
@@ -74,10 +60,7 @@ if __name__ == '__main__':
             loss_total += loss.item()
             optimizer.step()
             optimizer.zero_grad()
-            print(f'Epoch [{epoch+1}/135] Batch [{batch_id}/1070], Average Loss: {loss.item():.4f}')
-            if batch_id%50==0:
-                # img.show_with_annotation_and_detection(data_batch[0].unsqueeze(0),target[target[...,-1].int()==0],output[0].unsqueeze(0),nms)
-                img.show_with_annotation_and_detection(data_batch, target,output, nms)
-            break
-        # print(f'Epoch [{epoch + 1}/135], Loss: {loss_total:.4f}')
-        # torch.save(model.state_dict(), f"YOLO_{epoch}_{time.time()}.pth")
+            if batch_id%25==0:
+                print(f'Epoch [{epoch + 1}/135] Batch [{batch_id}/???], Average Loss: {loss.item():.4f}')
+        print(f'Epoch [{epoch + 1}/135], Loss: {loss_total:.4f}')
+        torch.save(model.state_dict(), f"YOLO_PreTrain_{epoch}_{time.time()}.pth")

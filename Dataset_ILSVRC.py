@@ -8,27 +8,28 @@ from Annotation_ILSVRC import Annotation
 class Dataset:
     def __init__(self, cfg):
         self.cfg = cfg
-        self.file=zipfile.ZipFile(cfg.zip_dataset_path, 'r')
-        self.file_list = list({f[33:-4] for f in self.file.namelist() if f.startswith(cfg.train_annotations_path)} &
-                          {f[26:-5] for f in self.file.namelist() if f.startswith(cfg.train_images_path)})
+        self.file=zipfile.ZipFile(cfg.ILSVRC_dataset_path, 'r')
+        self.file_list = [f[33:-4] for f in self.file.namelist() if f.startswith(cfg.ILSVRC_train_annotations_path)]
+        with open('LOC_synset_mapping.txt', 'r') as file:
+            loc_synset_mapping = {}
+            for line_number, line in enumerate(file):
+                id_part = line.split()[0]
+                loc_synset_mapping[id_part] = line_number
+        self.loc_synset_mapping = loc_synset_mapping
     def __len__(self):
         return len(self.file_list)
 
     def __getitem__(self, idx):
-        img_path = self.cfg.train_images_path+"/"+self.file_list[idx]+".JPEG"
-        target_path = self.cfg.train_annotations_path+"/"+self.file_list[idx]+".xml"
-        # print(f"loading {self.file_list[idx]}")
+        file_path = self.file_list[idx]
+        img_path = self.cfg.ILSVRC_train_images_path+"/"+file_path+".JPEG"
         with self.file.open(img_path) as img_file:
             img = self.cfg.transform(Image.open(img_file).convert('RGB')).to(self.cfg.device)
-        with self.file.open(target_path) as xml_file:
-            xml = Annotation(ET.parse(xml_file),self.cfg).to_list()
-        return img,xml
+        target = self.loc_synset_mapping[file_path[0:9]]
+        return img,target
 
     def collate_fn(self,batch):
         data_batch = torch.stack([item[0] for item in batch])
-        labels_batch = torch.stack(
-            [torch.cat((ts, torch.tensor([item_id], device=self.cfg.device))) for item_id, item in enumerate(batch) for ts in
-             item[1]])
+        labels_batch = torch.stack([torch.tensor(item[1]) for item in batch])
         return data_batch, labels_batch
 
 if __name__ == '__main__':

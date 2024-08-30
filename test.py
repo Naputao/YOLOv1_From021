@@ -5,19 +5,19 @@ cfg = Config()
 criterion = Loss(cfg)
 output = torch.zeros([2,7,7,30])
 output[0,0,0,0:5] = torch.tensor([
-    1,1,0.01,0.04,1
+    1,1,0.01,0.01,1
 ])
 output[0,0,0,5:10] = torch.tensor([
-    0,0,0,0,1
+    0,0,0,0,0
 ])
 output[0,0,0,10] = torch.tensor([
     1
 ])
 output[1,4,4,0:5] = torch.tensor([
-    1,1,0.01,0.04,1
+    1,1,0.01,0.01,1
 ])
 output[1,4,4,5:10] = torch.tensor([
-    0,0,0,0,1
+    0,0,0,0,0
 ])
 output[1,4,4,10] = torch.tensor([
     1
