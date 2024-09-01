@@ -29,7 +29,7 @@ class Dataset:
     def __getitem__(self, idx):
         file_path = self.file_list[idx]
         img_file = self.file.extractfile(self.cfg.images_path +file_path+".jpg")
-        input = self.cfg.transform(Image.open(io.BytesIO(img_file.read())).convert('RGB')).to(self.cfg.device)
+        input = self.cfg.VOC2012_transform(Image.open(io.BytesIO(img_file.read())).convert('RGB')).to(self.cfg.device)
         annotation_file = self.file.extractfile(self.cfg.annotations_path +file_path+".xml")
         target = Annotation(ET.parse(annotation_file),self.cfg).to_list()
         return input,target

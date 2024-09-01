@@ -113,7 +113,7 @@ class PreTrainLoss(nn.Module):
         batch_num = output.shape[0]
         batch_id = torch.arange(batch_num)
         confidence_responsible = output[batch_id,target]
-        loss = -torch.log(confidence_responsible).sum()
+        loss = -torch.log(confidence_responsible+1e-6).sum()
         if torch.isnan(loss).any():
             with open('model_weights_on_nan.txt', 'w') as f:
                 for var_name, var_value in locals().items():
