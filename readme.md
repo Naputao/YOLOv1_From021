@@ -59,6 +59,8 @@ imagenet-object-localization-challenge.zip
 └─LOC_val_solution.csv
 ```
 # Todo list
+- [ ] **!!!!** 将PreTrain得到的特征提取骨干网络迁移学习到整个YOLO网络中
+
 - [x] **!!!** PreTrain最新结果，训练了大约20轮后的结果
 ```commandline
 Epoch [10/135] Batch [33500/34025], Average Loss: 3492.5619
@@ -72,17 +74,17 @@ Epoch [10/135] Batch [34000/34025], Average Loss: 3532.2503
 
 通过val验证集验证，Validate.py跑出结果为0.4715,意味着在验证集上的top-5有47.15%的准确率，虽然不是特别高，但是也说明了模型已经具备一些特征提取的能力了。
 
-- [ ] **!!!!** 预训练模型，通过预训练模型得到的骨干网络参数，再训练YOLO。代码已经写好，数据集已准备好，就剩炼丹了
+- [x] 预训练模型，通过预训练模型得到的骨干网络参数，再训练YOLO。代码已经写好，数据集已准备好，就剩炼丹了
 
-- [ ] **!!!** 找到合适的方法训练模型，以及验证模型是否训练有效，得到一个模型训练好的模型
+- [x] 找到合适的方法训练模型，以及验证模型是否训练有效，得到一个模型训练好的模型
 
-- [x] **!!** 实现非极大值抑制（NMS）
+- [x] 实现非极大值抑制（NMS）
 
 - [x] YOLO论文中给出20个参数用于检测类别，但是ILSVRC数据集的类别有成千上百个， 所以一个办法是训练另一个模型，以这20个参数为输入，输出为1个类别以及confidence 但是这里还未想好怎么实现，并且现阶段的目标只是让YOLO知道哪个网格里有东西，这个东西有多大 所以等到之后有机会再实现，所以目前损失函数的分类损失使用随机tensor，在batch等于16的情况下大约贡献1300的Loss
 
 - [x] 上一条已解决，通过将ILSVRC数据集更换为VOC2012数据集解决类别问题，加入了分类损失
 
-- [x] **!** 修改loss函数，尽量不用for循环和if条件判断，并且不用prediction类、Annotation类、Grid类、Box类、IOU类，而是直接对tensor进行切片操作，提高速率。
+- [x] 修改loss函数，尽量不用for循环和if条件判断，并且不用prediction类、Annotation类、Grid类、Box类、IOU类，而是直接对tensor进行切片操作，提高速率。
 
 - [x] 自定义DataLoader,需要将image和xml一一对应然后输出，之后将image转化成(batch_size,3,448,448)的tensor，label需要读取xml文件，然后转化成(batch_size,4)的tensor,
 
