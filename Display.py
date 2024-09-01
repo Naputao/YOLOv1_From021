@@ -23,12 +23,13 @@ if saved_model_path is not None:
 # torch.set_printoptions(threshold=torch.inf)
 with open('model_weights_on_nan.txt', 'w') as f:
     for name, param in model.named_parameters():
-        f.write(f"{name}:\n{param.data}\n\n")
-for batch_id, (data_batch, target) in enumerate(dataloader):
-    output = model(data_batch.to(device))
-    with torch.no_grad():
-        print(criterion(output, target.to(device)).item())
+        f.write(f"{name}:/n{param.data}/n/n")
+from PIL import Image
+with open("C:/Users/Naputao/Desktop/8DA223856C5793905AEB33A22FF2D28C.jpg", "rb") as img_file:
+    img = Image.open(img_file)
+    img = cfg.VOC2012_transform(img)
+    img = img.unsqueeze(0)
+    output = model(img.to(device))
     with open("tensor.log", 'w') as f:
         f.write(str(output))
-    image.show_with_annotation_and_detection(data_batch, target, output,nms)
-    break
+    image.show_with_detection(img,output)

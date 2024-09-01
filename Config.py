@@ -64,7 +64,7 @@ class Config:
         ])
         self.batch_size = 16
         # self.saved_model_path = "YOLO_0_1724736447.720819.pth"
-        self.saved_model_path = "YOLO_PreTrain_9_1725161446.888909.pth"
+        self.saved_model_path = "YOLO_9_1725199940.5631301.pth"
         self.device = torch.device('cuda')
 if __name__ == '__main__':
     import Image

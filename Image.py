@@ -17,7 +17,7 @@ class Image:
             plt.show()
     def show_with_detection(self,imgs,output):
         imgs = imgs.cpu()
-        output = NMS.NMS(self.config).filter(output.cpu())
+        output = NMS.NMS(self.config).filter_max_confident(output.cpu())
         for id, img in enumerate(imgs):
             fig, ax = plt.subplots()
             ax.imshow(img.cpu().permute(1, 2, 0).numpy())
@@ -56,7 +56,6 @@ class Image:
             nms = NMS.NMS(self.config).filter
         imgs = imgs.cpu()
         output = nms(output.cpu())
-        print(output)
         table = {}
         targets = targets.cpu()
         for box in targets:
